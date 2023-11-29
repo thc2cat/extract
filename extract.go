@@ -4,6 +4,7 @@ package main
 // read stdin, output filteredinput if error to output
 // 2023/07/20 : V0.1
 // 2023/11/07 : V0.2 -ipv6 + net.Parse , -match pattern
+// 2023/11/28 : v1.3 -ipv4r ( exclude private address)
 
 import (
 	"bufio"
@@ -27,6 +28,8 @@ var (
 
 	IP6 = regexp.MustCompile(`((([0-9a-fA-F]{1,4}|)([:]{1,2})([0-9a-fA-F]{1,4}|[:]{1,2})){1,8})`)
 	// Catch a lot more than ipv6 address (have to be verified with net.Parse )
+	// Privates = regexp.MustCompile(`^(10|172\.(1[6789]|2[0-9]|3[01])|192\.168\.`)
+	Privates = regexp.MustCompile(`^(0\.|240\.|255\.|224\.|169\.254|127\.|10\.|(172\.1[6-9]\.)|(172\.2[0-9]\.)(172\.3[0-1]\.)|(192\.168\.))`)
 )
 
 func main() {
@@ -55,6 +58,8 @@ func main() {
 		re = EMAIL
 	case "-ip4":
 		re = IP
+	case "-ip4p":
+		re = IP
 	case "-ip6":
 		re = IP6
 	case "-mac":
@@ -73,9 +78,15 @@ func main() {
 		text := scanner.Text()
 		for _, element := range match(text, re) {
 			switch arg {
-			case "-ip4", "-ip6":
-				if r := net.ParseIP(element); r != nil {
-					fmt.Println(element)
+			case "-ip4", "-ip6", "-ip4p":
+				if r := net.ParseIP(element); r != nil { // Parseable
+					if arg == "-ip4p" { // Public only
+						if t := match(element, Privates); len(t) == 0 {
+							fmt.Println(element)
+						}
+					} else {
+						fmt.Println(element)
+					}
 				}
 			default:
 				fmt.Println(element)
@@ -96,6 +107,6 @@ func match(text string, re *regexp.Regexp) []string {
 
 func Usage() {
 	if os.Args != nil {
-		fmt.Printf("Usage: %s [-url|-email|(-ip4 default)|-ip6|-mac\n", os.Args[0])
+		fmt.Printf("Usage: %s [-url|-email|-mac|-ip6|-ip4[p(ublic)] ]\n", os.Args[0])
 	}
 }
