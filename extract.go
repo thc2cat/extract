@@ -4,7 +4,7 @@ package main
 // read stdin, output filteredinput if error to output
 // 2023/07/20 : V0.1
 // 2023/11/07 : V0.2 -ipv6 + net.Parse , -match pattern
-// 2023/11/28 : v1.3 -ipv4r ( exclude private address)
+// 2023/11/28 : v1.3 -ipv4p ( print private address, default ignore )
 
 import (
 	"bufio"
@@ -80,12 +80,12 @@ func main() {
 			switch arg {
 			case "-ip4", "-ip6", "-ip4p":
 				if r := net.ParseIP(element); r != nil { // Parseable
-					if arg == "-ip4p" { // Public only
+					if arg == "-ip4p" { // print also Privates
+						fmt.Println(element)
+					} else {
 						if t := match(element, Privates); len(t) == 0 {
 							fmt.Println(element)
 						}
-					} else {
-						fmt.Println(element)
 					}
 				}
 			default:
