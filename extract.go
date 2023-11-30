@@ -6,6 +6,8 @@ package main
 // 2023/11/07 : V0.2 -ipv6 + net.Parse , -match pattern
 // 2023/11/28 : v1.3 -ipv4p ( print private address, default ignore )
 // 2023/11/28 : v1.4 : + uniqs map ( avoiding "| sort -u" )
+// 2023/11/28 : v1.4.1 :  if ENV variable is set DOCOUNT print count of items
+//                        like  "sort | uniq -c"
 
 import (
 	"bufio"
@@ -33,7 +35,7 @@ var (
 	Privates = regexp.MustCompile(`^(0\.|240\.|255\.|224\.|169\.254|127\.|10\.|(172\.1[6-9]\.)|(172\.2[0-9]\.)(172\.3[0-1]\.)|(192\.168\.))`)
 
 	// map of uniq elements founds ( avoid |sort -u|)
-	uniqs = make(map[string]bool)
+	uniqs = make(map[string]int)
 )
 
 func main() {
@@ -85,15 +87,15 @@ func main() {
 			case "-ip4", "-ip6", "-ip4p":
 				if r := net.ParseIP(element); r != nil { // Parseable
 					if arg == "-ip4p" { // print also Privates
-						uniqs[element] = true
+						uniqs[element]++
 					} else {
 						if t := match(element, Privates); len(t) == 0 {
-							uniqs[element] = true
+							uniqs[element]++
 						}
 					}
 				}
 			default:
-				uniqs[element] = true
+				uniqs[element]++
 			}
 		}
 	}
@@ -102,8 +104,14 @@ func main() {
 		fmt.Print(err)
 	}
 
-	for key := range uniqs {
-		fmt.Println(key)
+	count := os.Getenv("DOCOUNT")
+
+	for key, value := range uniqs {
+		if count == "" {
+			fmt.Println(key)
+		} else {
+			fmt.Printf("%5d %s\n", value, key)
+		}
 	}
 
 }
