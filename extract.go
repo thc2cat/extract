@@ -5,6 +5,7 @@ package main
 // 2023/07/20 : V0.1
 // 2023/11/07 : V0.2 -ipv6 + net.Parse , -match pattern
 // 2023/11/28 : v1.3 -ipv4p ( print private address, default ignore )
+// 2023/11/28 : v1.4 : + uniqs map ( avoiding "| sort -u" )
 
 import (
 	"bufio"
@@ -30,6 +31,9 @@ var (
 	// Catch a lot more than ipv6 address (have to be verified with net.Parse )
 	// Privates = regexp.MustCompile(`^(10|172\.(1[6789]|2[0-9]|3[01])|192\.168\.`)
 	Privates = regexp.MustCompile(`^(0\.|240\.|255\.|224\.|169\.254|127\.|10\.|(172\.1[6-9]\.)|(172\.2[0-9]\.)(172\.3[0-1]\.)|(192\.168\.))`)
+
+	// map of uniq elements founds ( avoid |sort -u|)
+	uniqs = make(map[string]bool)
 )
 
 func main() {
@@ -81,21 +85,25 @@ func main() {
 			case "-ip4", "-ip6", "-ip4p":
 				if r := net.ParseIP(element); r != nil { // Parseable
 					if arg == "-ip4p" { // print also Privates
-						fmt.Println(element)
+						uniqs[element] = true
 					} else {
 						if t := match(element, Privates); len(t) == 0 {
-							fmt.Println(element)
+							uniqs[element] = true
 						}
 					}
 				}
 			default:
-				fmt.Println(element)
+				uniqs[element] = true
 			}
 		}
 	}
 
 	if err := scanner.Err(); err != nil {
 		fmt.Print(err)
+	}
+
+	for key := range uniqs {
+		fmt.Println(key)
 	}
 
 }
